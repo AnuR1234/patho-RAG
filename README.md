@@ -25,19 +25,8 @@ PathoRAG was developed as a proof of concept (POC) for pathology question answer
 These are preliminary results. The system has not yet been compared against other RAG systems or a plain LLM.
 
 ## Architecture
+<img width="759" height="911" alt="Pratikum (1)" src="https://github.com/user-attachments/assets/db8b75eb-7230-42d2-b8f3-eeb05afd12a3" />
 
-```mermaid
-flowchart LR
-    A[Question-article chunks JSON] --> B[Dense + sparse embeddings]
-    B --> C[(Pinecone vector store)]
-    Q[User question] --> E[Query embedding]
-    E --> H[Hybrid search]
-    C --> H
-    H --> R[Ranked article chunks]
-    R --> L[LLM via LangChain - OpenAI]
-    Q --> L
-    L --> S[Streamlit app]
-```
 
 **Phase 1: data encoding and storage**
 - Articles are split with a *smart-chunking* approach that keeps sections and paragraphs together.
