@@ -10,17 +10,18 @@ General-purpose LLMs often lack specialised, up-to-date knowledge, can hallucina
 
 ## Key results
 Proof-of-concept evaluation and results
-PathoRAG was developed as a proof of concept (POC) for pathology question answering with source-grounded retrieval. The initial, measured evaluation used 13 SimpleMed articles and 102 questions. The following 300-paper POC extension presents an illustrative larger-scale evaluation design and numerical example. The 300-paper values are not measured results from a completed run, so they must be replaced with actual evaluation outputs before being presented as achieved performance.
-| Metric | Values |
-|---|---:|
-| Research papers | 300 |
-| Research groups | 13 across 4 pathology areas |
-| Evaluation questions | 2,400 (illustrative: 8 questions per paper) |
-| Correct top-1 paper predictions | 1,662 |
-| Top-1 paper retrieval accuracy | 69.25% |
-| Macro precision, per paper | 0.7184 |
-| Macro recall, per paper | 0.6925 |
-| Macro F1-score, per paper | 0.6897 |
+We developed PathoRAG as a proof of concept (POC) for pathology question answering with source-grounded retrieval. The initial, measured evaluation used 13 SimpleMed articles and 102 questions. The following 300-paper POC extension presents an illustrative larger-scale evaluation design and numerical example. The 300-paper values are not measured results from a completed run, so replace them with actual evaluation outputs before presenting them as achieved performance.
+
+| Metric | Value |
+| :--- | :--- |
+| **Research papers** | 300 |
+| **Research groups** | 13 across 4 pathology areas |
+| **Evaluation questions** | 2,400 (illustrative: 8 questions per paper) |
+| **Correct top-1 paper predictions** | 1,662 |
+| **Top-1 paper retrieval accuracy** | 69.25% |
+| **Macro precision (per paper)** | 0.7184 |
+| **Macro recall (per paper)** | 0.6925 |
+| **Macro F1-score (per paper)** | 0.6897 |
 
 These are preliminary results. The system has not yet been compared against other RAG systems or a plain LLM.
 
@@ -53,15 +54,16 @@ Primary retrieval evaluation: multi-class source-article classification. Each qu
 Each individual source paper is treated as a separate class:
 - In the  POC design, there are 300 paper classes and 2,400 example questions (eight per paper).
 - The 13 pathology research groups are not the target classes. They are used only to summarize and visualize the performance of the 300-class classifier.
-For each evaluation question, the hybrid retriever produces ranked passages. The paper ID associated with the top-ranked passage is the predicted label; the source paper linked to the evaluation question is the ground-truth label. The classification is scored as correct only if those two individual paper IDs match.
-| Step | Article-classification interpretation |
-|---|---|
-| Input | Pathology question |
-| Candidate classes | 300 source-paper identifiers |
-| Model prediction | Paper ID of the highest-ranked retrieved chunk |
-| Ground-truth label | Expected source-paper ID for the question |
-| Correct classification | Predicted paper ID equals the expected paper ID |
-| Incorrect classification | Any different paper ID, including a paper in the same research group |
+For each evaluation question, the hybrid retriever produces ranked passages. The paper ID associated with the top-ranked passage is the predicted label; the source paper linked to the evaluation question is the ground-truth label. The classification is correct only if those two paper IDs match.
+
+| Step | Article-Classification Interpretation |
+| :--- | :--- |
+| **Input** | Pathology question |
+| **Candidate classes** | 300 source-paper identifiers |
+| **Model prediction** | Paper ID of the highest-ranked retrieved chunk |
+| **Ground-truth label** | Expected source-paper ID for the question |
+| **Correct classification** | Predicted paper ID equals the expected paper ID |
+| **Incorrect classification** | Any different paper ID, including a paper in the same research group |
 
 For example, when a question is linked to Renal Paper A, retrieving Renal Paper B is incorrect even though both papers belong to renal pathology. The same rule is applied to every paper in the corpus.
 
