@@ -2,7 +2,7 @@
 Topic: Retrieval-augmented LLM for pathological use-case
 
 
-<img width="629" alt="Screenshot 2023-12-09 at 22 01 44" src="https://github.com/cpheidelberg/patho-RAG/assets/35266536/77b6c92e-9c5d-466b-876c-7ac036ccbabe">
+<img width="759" height="911" alt="Pratikum (1)" src="https://github.com/user-attachments/assets/16bf5d44-898d-4e32-b915-8a0fd5ddd75c" />
 
 Summary (our motivation for taking up this project):
 In order to reduce the hallucinations and provide more domain-specific output rather than generalized data. 
