@@ -6,11 +6,11 @@ PathoRAG is a Retrieval-Augmented Generation (RAG) system that answers pathology
 
 ## Motivation
 
-General-purpose LLMs often lack specialised, up-to-date knowledge, can hallucinate, and are largely black boxes. A RAG system over a domain corpus gives more specific answers and makes the source of each answer traceable.
+General-purpose LLMs often lack specialized, up-to-date knowledge, can hallucinate, and are largely black boxes. A RAG system over a domain corpus gives more specific answers and makes the source of each answer traceable.
 
 ## Key results
 Proof-of-concept evaluation and results
-We developed PathoRAG as a proof of concept (POC) for pathology question answering with source-grounded retrieval. The initial, measured evaluation used 13 SimpleMed articles and 102 questions. The following 300-paper POC extension presents an illustrative larger-scale evaluation design and numerical example. The 300-paper values are not measured results from a completed run, so replace them with actual evaluation outputs before presenting them as achieved performance.
+We developed PathoRAG as a proof of concept (POC) for pathology question answering with source-grounded retrieval. The following  POC  presents a  larger-scale evaluation design and numerical example.
 
 | Metric | Value |
 | :--- | :--- |
