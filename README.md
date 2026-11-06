@@ -1,133 +1,210 @@
-# Master’s Internship at CPH (Computation Pathology Heidelberg)
-Topic: Retrieval-augmented LLM for pathological use-case
+# PathoRAG: Retrieval-Augmented Generation with LLMs for Pathology
 
+Advanced internship project at **Computational Pathology Heidelberg (CPH)** and the **Mannheim Institute for Intelligent Systems in Medicine (MIiSM)**, University of Heidelberg.
 
-<img width="759" height="911" alt="Pratikum (1)" src="https://github.com/user-attachments/assets/16bf5d44-898d-4e32-b915-8a0fd5ddd75c" />
+PathoRAG is a Retrieval-Augmented Generation (RAG) system that answers pathology questions using a curated pathology corpus instead of relying only on an LLM's built-in knowledge. Every answer is grounded in retrieved article chunks, so you can see where the information comes from, and the system declines to answer out-of-domain questions.
 
-Summary (our motivation for taking up this project):
-In order to reduce the hallucinations and provide more domain-specific output rather than generalized data. 
-Since most of the LLMs are ‘blackbox’, having an RAG system for our owndata, would be clearer as to where the data is been taken from in order to generate new text.
+## Motivation
 
-Introduction:
-The main two components of a context-document-retriever are, therefore, 
-retriever 
-generator.
-The retriever part can be described as a system that can encode our data so that the relevant parts of it can be easily retrieved upon querying it. The encoding uses text embeddings, i.e., a model trained to create a vector representation of the information. The best option for storing the embeddings of the retriever is a vector database. As a vector database, there are multiple options. A few examples are ChromaDBB, FAISS, Pinecone, and Weaviate. Our option in this will be either PineCone or ChromaDB(yet to decide) 
-For the generator part, the obvious option is a LLM. In this workflow, we will be using Medalpeca from the huggingface instance. The orchestration of the retriever and generator will be done using Langchain. 
-Target Definition:
-Design of the smart document retrieval system that can be fed to LLM(Medalpeca) to provide a more concise response to users' queries.
+General-purpose LLMs often lack specialised, up-to-date knowledge, can hallucinate, and are largely black boxes. A RAG system over a domain corpus gives more specific answers and makes the source of each answer traceable.
 
+## Key results
 
+| Metric (13 articles, 102 questions) | Value |
+|---|---|
+| Accuracy | ~80 % |
+| Mean precision | 0.8295 |
+| Mean recall | 0.8039 |
+| Mean F1-score | 0.8165 |
 
+These are preliminary results. The system has not yet been compared against other RAG systems or a plain LLM.
 
-**Copyright (c) 2023.**
+## Architecture
 
-This code has been developed as part of the "Computational Pathology Heidelberg (CPH)" project.
+```mermaid
+flowchart LR
+    A[Question-article chunks JSON] --> B[Dense + sparse embeddings]
+    B --> C[(Pinecone vector store)]
+    Q[User question] --> E[Query embedding]
+    E --> H[Hybrid search]
+    C --> H
+    H --> R[Ranked article chunks]
+    R --> L[LLM via LangChain - OpenAI]
+    Q --> L
+    L --> S[Streamlit app]
+```
 
-For detailed information on usage, redistribution, and a DISCLAIMER OF ALL WARRANTIES, please refer to the "LICENSE" file in this distribution.
+**Phase 1: data encoding and storage**
+- Articles are split with a *smart-chunking* approach that keeps sections and paragraphs together.
+- Chunks are embedded with two models: dense (`msmarco-bert-base-dot-v5`) and sparse (`naver/splade-cocondenser-ensembledistil`).
+- Embeddings and article text are stored in Pinecone (dot-product metric).
 
-**BSD Simplified License**
+**Phase 2: query processing and answer generation**
+- The query is embedded with the same models.
+- Hybrid search (dense + sparse) retrieves the most relevant chunks and ranks them in Pinecone.
+- The chunks, the question and a prompt template go to an OpenAI LLM through LangChain, which generates the answer.
+- A Streamlit app provides the user interface.
 
-## GitHub Repository Naming
-To name your repositories, please use the following naming convention:
+## Datasets
 
-`[Prefix]-[Project Name]-[Tech Stack]`
+- **Question-article pairs (used for evaluation):** a pathology quiz mined from [simplemed.co.uk](https://simplemed.co.uk), with 13 articles, 102 questions, ~15k article words and ~3k question words. Questions that need their multiple-choice options were completed with the answer options.
+- **Pathology PDF textbooks (experimental):** text extracted with PyMuPDF, chunked and stored as JSON. This pipeline is prepared but was **not** used in the evaluation.
+- **Auto-generated questions (experimental):** questions generated from article chunks with `gpt-3.5-turbo` through LangChain, for further testing.
 
-- **Prefix**: Use prefixes to categorize repositories, e.g.,
-  - `proj-` for project repositories
-  - `lib-` for libraries
-  - `doc-` for documentation
-  - `app-` for applications
-  - `data-` for data-related repositories
+The test dataset will be published on [HeiData](https://heidata.uni-heidelberg.de/) once the consent of simplemed is obtained.
 
-- **Project Name**: Provide a concise description of the project or repository's main purpose. This should be the most prominent part of the name.
+## Results
 
-- **Tech Stack**: Specify the technology, framework, tool, etc., on which the project is based.
+The retriever was evaluated as a classification task: each question must be matched to the article it belongs to.
 
-- **Use CamelCase for Multi-Word Names**: If necessary, use camelCase for multi-word names, e.g., "computationalPathology."
+### Per-article metrics
 
-- **No Underscores or Mixed Case**: Stick to hyphens and lowercase letters for simplicity and consistency.
+| Article | Precision | Recall | F1 |
+|---|---|---|---|
+| Acute-Inflammation | 0.78 | 0.82 | 0.80 |
+| Atherosclerosis | 0.82 | 0.82 | 0.82 |
+| Basics-of-pathology | 0.85 | 0.98 | 0.91 |
+| Behaviour-of-neoplasms | 0.65 | 0.81 | 0.72 |
+| Cellular-adaptations | 0.55 | 0.50 | 0.52 |
+| Chronic-inflammation | 0.82 | 0.65 | 0.73 |
+| Epithelium-skin-and-exocrine-glands | 0.96 | 0.98 | 0.97 |
+| Haemostasis-and-clotting | 0.96 | 0.79 | 0.87 |
+| Introduction-to-neoplasia | 0.62 | 0.79 | 0.70 |
+| Lymphatic-system | 0.80 | 0.85 | 0.82 |
+| Pathogenesis-of-neoplasms | 1.00 | 0.40 | 0.57 |
+| Regeneration-and-repair-of-tissues | 1.00 | 0.91 | 0.95 |
+| Thrombosis-and-embolism | 0.60 | 0.81 | 0.69 |
+| **Mean** | **0.8295** | **0.8039** | **0.8165** |
 
-- **No Special Characters**: Avoid special characters, spaces, or symbols in repository names.
+Epithelium-skin-and-exocrine-glands scores highest. Cellular-adaptations scores lowest. Precision is generally high, while recall varies more across topics.
 
-For example, if you have a machine learning project related to image processing using Pytorch and OpenCV you can use:
+### Precision
 
-- `proj-image-processing-pytorch-opencv`
-- `proj-imageProcessing-pytorch-opencv`
+![Precision per article](Results/Pre.png)
 
-## Description
-Detailed project description, including relevant attribution for forked, adapted, or inspired projects.
+### Recall
 
-### Project Structure
-For larger, more complicated projects, this is the repo folder structure:
+![Recall per article](Results/Re.png)
 
-- `folder1/`: Contains models.
-- `folder2/`: Contains media assets.
-- ...
+### F1-score
+
+![F1-score per article](Results/F1.png)
+
+### Confusion matrix
+
+![Confusion matrix heatmap](Results/confusion_matrix_heatmap.jpeg)
+
+Most predictions lie on the diagonal. The off-diagonal entries are the misclassified questions.
+
+### Demo
+
+![PathoRAG Streamlit demo](Results/demo.png)
+<!-- TODO: replace Results/demo.png with the actual demo file name in the Results folder -->
+
+Example behaviour:
+
+| Question | Behaviour |
+|---|---|
+| What are the main lymphoid organs? | Grounded answer from the *Lymphatic system* article |
+| What is metaplasia? | Grounded answer; retrieved chunk matches the generated text |
+| Are platelets cell fragments involved in blood clotting? | Grounded answer, quoting the retrieved chunk |
+| What is photosynthesis? | "I don't know." (out-of-domain, no hallucination) |
+
+## Project structure
+
+```
+patho-RAG/
+├── code/          # PathoRAG implementation, evaluation, Streamlit app, notebooks
+├── Results/       # Metric plots (precision, recall, F1), confusion matrix, demo
+├── SPADE/         # TODO: describe contents
+├── .gitignore
+├── LICENSE
+└── README.md
+```
+<!-- TODO: list the key files in code/ (PathoRAG class, ClassificationTest class,
+     Streamlit app, Generating_QA_for_testing.ipynb) -->
 
 ## Requirements
 
-### Software Dependencies
-- libA (version X.Y.Z)
-- libB (version A.B.C)
-- ...
+### Software dependencies
 
-### Supported Operating Systems
-- macOS
-- Linux
-- Windows
-- ...
-  
-(Add any notes about the platforms or setups used for development & testing.)
+- Python 3.x
+- [LangChain](https://api.python.langchain.com/en/stable/langchain_api_reference.html)
+- [Pinecone](https://docs.pinecone.io) client and an account
+- `sentence-transformers` and `transformers` (dense and SPLADE sparse embeddings)
+- OpenAI API access
+- Streamlit
+- PyMuPDF (only for the PDF textbook pipeline)
 
-## Installation & Build
+### API keys
 
-_General dependency & build install instructions with per-platform subsections when needed. Please include commandline steps, when applicable._
+Set your own keys before running (OpenAI and Pinecone are paid or account-based services):
 
-To get started, follow these steps:
-1. Download and install [Anaconda](https://www.anaconda.com/products/individual).
-2. Create a virtual environment:
-```shell
-$ conda create -n "name" python=3.7
-$ conda activate "name"
-$ pip install -r requirements.txt
+```bash
+export OPENAI_API_KEY="..."
+export PINECONE_API_KEY="..."
 ```
-3. Install project dependencies
-```shell
-$ pip install -r requirements.txt
+
+### Supported operating systems
+
+macOS, Linux, Windows (developed and tested on: TODO).
+
+## Installation
+
+```bash
+git clone https://github.com/AnuR1234/patho-RAG.git
+cd patho-RAG
+conda create -n pathorag python=3.10
+conda activate pathorag
+pip install -r requirements.txt
 ```
-(Include any platform-specific instructions if needed.)
+<!-- TODO: confirm the requirements file location and Python version -->
 
 ## Usage
-After installation, you can use the application as follows:
 
-### Show Help
+1. Build the index: embed the article chunks and upload them to Pinecone.
+2. Run the Streamlit app:
+
+```bash
+streamlit run <path-to-streamlit-app>.py
 ```
-$ python executable.py --help
-```
+<!-- TODO: fill in the real script names from code/ -->
 
-### Scenario 1
-```
-$ python executable.py --parameter 42
-```
+3. To reproduce the evaluation, run the `ClassificationTest` class on the question-article dataset. It reports accuracy, precision, recall, F1-score and the confusion matrix.
 
-(Provide more usage examples if applicable.)
+## Limitations and future work
 
-## References / Further Reading
-Here are some useful references and related projects:
-- [paper](www.google.com)
-- [paper2](www.google.com)
+- Results are preliminary and not yet compared with other systems or a bare LLM.
+- The PDF textbook corpus is prepared but not part of the evaluation.
+- Ongoing costs of OpenAI and Pinecone, and chunking and embedding quality, strongly affect performance.
 
-## Contribute
-Contributions are very welcome! Here's how to get involved:
+Planned improvements:
+- **Query/document alignment:** query rewriting (Query2Doc, HyDE) and embedding transformation.
+- **Retriever/LLM alignment:** fine-tuning retrievers (REPLUG, UPRISE), post-retrieval reranking and compression, fine-tuning the LLM for RAG.
+- **More sources:** textbooks (PDFs), scanned documents and other pathology corpora.
 
-1. Clone or fork the repository.
-2. Make your changes or improvements.
-3. Create a pull request.
-4. If you find any bugs or have suggestions, please log them here as well.
+## References
 
-(Include additional details on development environment setup, coding style, testing, and issue reporting as needed.)
+1. P. Lewis, E. Perez, A. Piktus, F. Petroni, V. Karpukhin, N. Goyal, H. Küttler, M. Lewis, W.-t. Yih, T. Rocktäschel et al., "Retrieval-augmented generation for knowledge-intensive NLP tasks," *Advances in Neural Information Processing Systems*, vol. 33, pp. 9459–9474, 2020.
+2. M. Silva, "Retrieval augmented generation: Keeping LLMs relevant and current," Stack Overflow Blog, 18 Oct 2023. https://stackoverflow.blog/2023/10/18/retrieval-augmented-generation-keeping-llms-relevant-and-current/
+3. T. Shao, Y. Guo, H. Chen, and Z. Hao, "Transformer-based neural network for answer selection in question answering," *IEEE Access*, vol. 7, pp. 26146–26156, 2019.
+4. N. Sadri, "Evaluating dense passage retrieval using transformers," arXiv:2208.06959, 2022.
+5. T. Formal, C. Lassance, B. Piwowarski, and S. Clinchant, "SPLADE v2: Sparse lexical and expansion model for information retrieval," arXiv:2109.10086, 2021.
+6. A. Reddy, "patho-rag," https://github.com/cpheidelberg/patho-RAG/tree/main/code, 2023.
+7. L. Wang, N. Yang, and F. Wei, "Query2doc: Query expansion with large language models," arXiv:2303.07678, 2023.
+8. P. Zhao, H. Zhang, Q. Yu, Z. Wang, Y. Geng, F. Fu, L. Yang, W. Zhang, and B. Cui, "Retrieval-augmented generation for AI-generated content: A survey," arXiv:2402.19473, 2024.
+9. W. Shi, S. Min, M. Yasunaga, M. Seo, R. James, M. Lewis, L. Zettlemoyer, and W.-t. Yih, "REPLUG: Retrieval-augmented black-box language models," arXiv:2301.12652, 2023.
+10. H. Yokota, T. Kobayashi, T. Muraki, and S. Naoi, "UPRISE: Unified presentation slide retrieval by impression search engine," *IEICE Transactions on Information and Systems*, vol. 87, no. 2, pp. 397–406, 2004.
 
----
-**Author:** Your Name <br>
-**Contact:** [your@email.com](mailto:your@email.com)
+## Authors and contact
+
+**Author:** Anu Reddy
+**Mentors:** Jürgen Hesser , Maximilian Legnar, Dr. Cleo-Aron Weis
+
+## Contributing
+
+Contributions are welcome. Fork the repository, make your changes, and open a pull request. Bugs and suggestions can be logged as issues.
+
+## License
+
+Copyright (c) 2023. This code was developed as part of the "Computational Pathology Heidelberg (CPH)" project and is released under the **BSD Simplified License**. See the `LICENSE` file for details and the disclaimer of all warranties.
